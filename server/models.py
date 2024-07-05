@@ -26,8 +26,10 @@ class Planet(db.Model, SerializerMixin):
     nearest_star = db.Column(db.String)
 
     # Add relationship
+    missions = db.relationship('Mission', back_populates='planet')
 
     # Add serialization rules
+    serialize_rules = ('-missions',)
 
 
 class Scientist(db.Model, SerializerMixin):
@@ -38,10 +40,24 @@ class Scientist(db.Model, SerializerMixin):
     field_of_study = db.Column(db.String)
 
     # Add relationship
+    missions = db.relationship('Mission', back_populates='scientist', cascade="all, delete-orphan")
 
     # Add serialization rules
+    serialize_rules = ('-missions',)
 
     # Add validation
+
+    @validates('name')
+    def validate_name(self, key, name):
+        if not name:
+            raise ValueError('validation errors')
+        return name
+    
+    @validates('field_of_study')
+    def validate_field_of_study(self, key, field):
+        if not field:
+            raise ValueError('validation errors')
+        return field
 
 
 class Mission(db.Model, SerializerMixin):
@@ -51,10 +67,32 @@ class Mission(db.Model, SerializerMixin):
     name = db.Column(db.String)
 
     # Add relationships
+    planet_id = db.Column(db.Integer, db.ForeignKey('planets.id'))
+    scientist_id = db.Column(db.Integer, db.ForeignKey('scientists.id'))
+
+    scientist = db.relationship('Scientist', back_populates='missions')
+    planet = db.relationship('Planet', back_populates='missions')
 
     # Add serialization rules
+    serialize_rules = ('-scientist.missions', '-planet.missions',)
 
     # Add validation
+    @validates('name')
+    def validates_name(self, key, name):
+        if not name:
+            raise ValueError('validation errors')
+        return name
 
+    @validates('scientist_id')
+    def validates_scientist_id(self, key, scientist_id):
+        if not scientist_id:
+            raise ValueError('validation errors')
+        return scientist_id
+    
+    @validates('planet_id')
+    def validates_planet_id(self, key, planet_id):
+        if not planet_id:
+            raise ValueError('validation errors')
+        return planet_id
 
 # add any models you may need.
